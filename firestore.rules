@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function currentUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return signedIn() &&
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          currentUserDoc().data.role == 'admin';
+    }
+
+    match /users/{userId} {
+      allow create: if isOwner(userId) &&
+          request.resource.data.role == 'user';
+
+      allow read: if signedIn();
+
+      allow update: if isAdmin() ||
+          (isOwner(userId) &&
+              request.resource.data.role == resource.data.role &&
+              request.resource.data.email == resource.data.email) ||
+          (signedIn() &&
+              request.resource.data.diff(resource.data).changedKeys().hasOnly([
+                'balance',
+                'fraudBlockedUntil',
+                'lastFraudReason',
+                'deletedAt'
+              ]));
+
+      allow delete: if isAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      allow read, delete: if signedIn() &&
+          (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if signedIn();
+      allow update: if isAdmin();
+    }
+  }
+}

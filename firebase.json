@@ -1,0 +1,45 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "bank-mobile-application",
+          "appId": "1:478810615854:android:18ee166d15422bcbb06fbf",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "bank-mobile-application",
+          "configurations": {
+            "android": "1:478810615854:android:18ee166d15422bcbb06fbf",
+            "ios": "1:478810615854:ios:0f456ec756f9e865b06fbf",
+            "macos": "1:478810615854:ios:0f456ec756f9e865b06fbf",
+            "web": "1:478810615854:web:3c48d32711336c1db06fbf",
+            "windows": "1:478810615854:web:c5e4d3200db4fe54b06fbf"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ],
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}
