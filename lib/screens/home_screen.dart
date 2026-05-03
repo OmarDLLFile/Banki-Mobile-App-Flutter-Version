@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -17,20 +18,19 @@ import '../services/sound_feedback_service.dart';
 import '../utils/input_validators.dart';
 import '../widgets/aurora_background.dart';
 import '../widgets/top_right_back_button.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/service_providers.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  final FirestoreService firestore = FirestoreService();
-  final SecureStorageService storage = SecureStorageService();
-  final TransactionSecurityService security = TransactionSecurityService();
-  final FraudDetectionService fraudDetection = FraudDetectionService();
-  final SoundFeedbackService soundFeedback = SoundFeedbackService();
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+
+  int _currentIndex = 0;
 
   Map<String, dynamic>? userData;
 
@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final difference = DateTime.now().difference(lastActivity);
 
     if (difference.inMinutes > 5) {
-      storage.clearSession();
+      ref.read(secureStorageServiceProvider).clearSession();
 
       Navigator.pushAndRemoveUntil(
         context,
@@ -73,13 +73,24 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void logout() async {
+    await FirebaseAuth.instance.signOut();
+    await ref.read(secureStorageServiceProvider).clearSession();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
+  }
+
   void updateActivity() {
     lastActivity = DateTime.now();
   }
 
   void listenToUser() {
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    userSubscription = firestore.streamUser(uid).listen((data) {
+    userSubscription = ref.read(firestoreServiceProvider).streamUser(uid).listen((data) {
       if (!mounted || data == null) {
         return;
       }
@@ -124,11 +135,11 @@ class _HomeScreenState extends State<HomeScreen> {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    await soundFeedback.playSuccessSound();
+    await ref.read(soundFeedbackServiceProvider).playSuccessSound();
   }
 
   Future<bool> guardTransaction() async {
-    final result = await fraudDetection.checkBeforeTransaction();
+    final result = await ref.read(fraudDetectionServiceProvider).checkBeforeTransaction();
 
     if (!result.allowed && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -166,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
           });
     });
 
-    await soundFeedback.playSuccessSound();
+    await ref.read(soundFeedbackServiceProvider).playSuccessSound();
   }
 
   Future<void> transferMoney(String email, double amount) async {
@@ -232,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
           });
     });
 
-    await soundFeedback.playSuccessSound();
+    await ref.read(soundFeedbackServiceProvider).playSuccessSound();
   }
 
   void showTransferDialog() {
@@ -302,7 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
 
                 /// SECURITY LAYER
-                bool authorized = await security.authorize(
+                bool authorized = await ref.read(transactionSecurityServiceProvider).authorize(
                   dialogContext,
                   userData!['email'],
                 );
@@ -378,15 +389,26 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: updateActivity,
       child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
+        extendBody: true,
+        extendBodyBehindAppBar: _currentIndex == 0,
+        appBar: _currentIndex == 0 ? AppBar(
           title: const Text("Secure Bank"),
-          actions: const [TopRightBackButton()],
-        ),
-        body: AuroraBackground(
-          child: ListView(
-            children: [
-              const SizedBox(height: 72),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.white70),
+              onPressed: logout,
+            ),
+          ],
+        ) : null,
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            AuroraBackground(
+              padding: EdgeInsets.zero,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
+                children: [
+                  const SizedBox(height: 72),
               FrostedPanel(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -506,6 +528,54 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+            const TransactionScreen(),
+            const AnalyticsScreen(),
+          ],
+        ),
+        bottomNavigationBar: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF062029).withValues(alpha: 0.6),
+                border: Border(
+                  top: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: BottomNavigationBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                selectedItemColor: const Color(0xFF7BFFD4),
+          unselectedItemColor: Colors.white60,
+          currentIndex: _currentIndex,
+          type: BottomNavigationBarType.fixed,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+            updateActivity();
+          },
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.history),
+              label: 'History',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart),
+              label: 'Analytics',
+            ),
+          ],
+        ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -586,7 +656,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
 
                 /// SECURITY LAYER
-                bool authorized = await security.authorize(
+                bool authorized = await ref.read(transactionSecurityServiceProvider).authorize(
                   dialogContext,
                   userData!['email'],
                 );

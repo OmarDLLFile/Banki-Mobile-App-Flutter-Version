@@ -101,6 +101,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         actions: const [TopRightBackButton()],
       ),
       body: AuroraBackground(
+        padding: EdgeInsets.zero,
         child: LayoutBuilder(
           builder: (context, constraints) {
             final contentWidth = constraints.maxWidth > 780
@@ -132,7 +133,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   child: SizedBox(
                     width: contentWidth,
                     child: ListView(
-                      padding: const EdgeInsets.only(top: 72, bottom: 20),
+                      padding: const EdgeInsets.fromLTRB(20, 72, 20, 90),
                       children: [
                         FrostedPanel(
                           child: Column(

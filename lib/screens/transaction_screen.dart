@@ -288,6 +288,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
         ],
       ),
       body: AuroraBackground(
+        padding: EdgeInsets.zero,
         child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: transactionStream,
           builder: (context, snapshot) {
@@ -320,7 +321,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                     width: contentWidth,
                     child: ListView(
                       physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.only(top: 72, bottom: 20),
+                      padding: const EdgeInsets.fromLTRB(20, 72, 20, 90),
                       children: [
                         FrostedPanel(
                           child: Column(

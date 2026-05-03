@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/fraud_detection_service.dart';
 import '../services/sound_feedback_service.dart';
 import '../utils/input_validators.dart';
-import '../widgets/top_right_back_button.dart';
 
 class BillPaymentScreen extends StatefulWidget {
   const BillPaymentScreen({super.key});
@@ -92,7 +91,6 @@ class _BillPaymentScreenState extends State<BillPaymentScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Bill Payment"),
-        actions: const [TopRightBackButton()],
       ),
 
       body: Padding(

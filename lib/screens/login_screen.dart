@@ -33,6 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final SecureStorageService storage = SecureStorageService();
 
   bool biometricAvailable = false;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -325,11 +326,24 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(height: 16),
                             TextFormField(
                               controller: passwordController,
-                              obscureText: true,
+                              obscureText: _obscurePassword,
                               validator: InputValidators.password,
                               style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: "Password",
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color: Colors.white70,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
                               ),
                             ),
                             const SizedBox(height: 22),
